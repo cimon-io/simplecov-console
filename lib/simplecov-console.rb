@@ -24,8 +24,7 @@ class SimpleCov::Formatter::Console
     end
 
     puts
-    puts "COVERAGE: #{colorize(pct(result))} -- #{result.covered_lines}/#{result.total_lines} lines in #{result.files.size} files"
-    puts
+    print "COVERAGE: #{colorize(pct(result.covered_percent))} -- #{result.covered_lines}/#{result.total_lines} lines in #{result.files.size} files"
 
     if root.nil? then
       return
@@ -47,29 +46,16 @@ class SimpleCov::Formatter::Console
       return
     end
 
-    table = files.map do |f|
-      { :coverage => pct(f),
-        :lines => f.lines_of_code,
-        :file => f.filename.gsub(root + "/", ''),
-        :missed => f.missed_lines.count,
-        :missing => missed(f.missed_lines).join(", ") }
+    hints = []
+    if files.size > 0 then
+      hints << ANSI.red { "#{files.size} file(s) with #{pct(files.map(&:covered_percent).sum.to_f / files.size)} avg coverage" }
     end
-
-    if table.size > 15 then
-      puts "showing bottom (worst) 15 of #{table.size} files"
-      table = table.slice(0, 15)
-    end
-
-    table_options = SimpleCov::Formatter::Console.table_options || {}
-
-    s = Hirb::Helpers::Table.render(table, table_options).split(/\n/)
-    s.pop
-    puts s.join("\n").gsub(/\d+\.\d+%/) { |m| colorize(m) }
-
     if covered_files > 0 then
-      puts "#{covered_files} file(s) with 100% coverage not shown"
+      hints <<  ANSI.green { "#{covered_files} file(s) with 100% coverage" }
     end
-
+    if hints.any?
+      print " (#{hints.join(" / ")})"
+    end
   end
 
   def missed(missed_lines)
@@ -101,7 +87,7 @@ class SimpleCov::Formatter::Console
   end
 
   def pct(obj)
-    sprintf("%6.2f%%", obj.covered_percent)
+    sprintf("%6.2f%%", obj)
   end
 
   def colorize(s)
